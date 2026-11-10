@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일본 경마 완벽 가이드 대시보드 | JRA & 명마 도감</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0f19',
+                        darkCard: '#131b2e',
+                        darkBorder: '#1e293b',
+                        gold: '#f59e0b',
+                        jraGreen: '#10b981',
+                        accentBlue: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        * { font-family: 'Pretendard', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #3b82f6;
+            color: #3b82f6;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-darkBg text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+    <!-- 상단 네비게이션 헤더 -->
+    <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkCard/90 backdrop-blur-md border-b border-slate-200 dark:border-darkBorder shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🏇</span>
+                <div>
+                    <h1 class="text-xl font-bold gradient-text">일본 경마 올인원 대시보드</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">JRA 중앙경마 10대 구장 · G1 캘린더 · 명마 도감 · 베팅 가이드</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="themeToggle" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 hover:ring-2 hover:ring-blue-500 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 탭 메뉴 바 -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 sm:space-x-6 overflow-x-auto text-sm font-medium border-t border-slate-100 dark:border-slate-800/60">
+            <button onclick="switchTab('tab1')" id="btn-tab1" class="tab-btn active py-3 px-2 flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-crown text-amber-500"></i>최애마 설정</button>
+            <button onclick="switchTab('tab2')" id="btn-tab2" class="tab-btn py-3 px-2 flex items-center gap-2 whitespace-nowrap text-slate-500 dark:text-slate-400"><i class="fa-solid fa-fire text-red-500"></i>G1 레이스 일정</button>
+            <button onclick="switchTab('tab3')" id="btn-tab3" class="tab-btn py-3 px-2 flex items-center gap-2 whitespace-nowrap text-slate-500 dark:text-slate-400"><i class="fa-solid fa-horse text-blue-500"></i>명마 & 기수 도감</button>
+            <button onclick="switchTab('tab4')" id="btn-tab4" class="tab-btn py-3 px-2 flex items-center gap-2 whitespace-nowrap text-slate-500 dark:text-slate-400"><i class="fa-solid fa-map-location-dot text-emerald-500"></i>전국 10대 경마장</button>
+            <button onclick="switchTab('tab5')" id="btn-tab5" class="tab-btn py-3 px-2 flex items-center gap-2 whitespace-nowrap text-slate-500 dark:text-slate-400"><i class="fa-solid fa-ticket text-purple-500"></i>마권 종류 & 계산기</button>
+            <button onclick="switchTab('tab6')" id="btn-tab6" class="tab-btn py-3 px-2 flex items-center gap-2 whitespace-nowrap text-slate-500 dark:text-slate-400"><i class="fa-solid fa-trophy text-yellow-500"></i>명예의 전당 & 뉴스</button>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- [TAB 1] 최애마 설정 -->
+        <section id="tab1" class="tab-content">
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span>👑 나의 최애 경주마 설정</span>
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">원하는 명마를 선택하면 상세 스펙과 커리어 하이라이트가 즉시 반영됩니다.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="horseSelect" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="이퀴녹스" selected>이퀴녹스 (Equinox)</option>
+                        <option value="딥 임팩트">딥 임팩트 (Deep Impact)</option>
+                        <option value="아몬드 아이">아몬드 아이 (Almond Eye)</option>
+                        <option value="오르페브르">오르페브르 (Orfevre)</option>
+                        <option value="키타산 블랙">키타산 블랙 (Kitasan Black)</option>
+                        <option value="골드 쉽">골드 쉽 (Gold Ship)</option>
+                        <option value="사일런스 스즈카">사일런스 스즈카 (Silence Suzuka)</option>
+                        <option value="토카이 테이오">토카이 테이오 (Tokai Teio)</option>
+                        <option value="소다시">소다시 (Sodashi)</option>
+                        <option value="도듀스">도듀스 (Do Deuce)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- 말 프로필 카드 -->
+                <div class="lg:col-span-7 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span id="horseBadge" class="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-full text-xs font-semibold">세계 레이팅 135의 괴물</span>
+                        <span id="horseCoat" class="text-xs text-slate-400">청록모 (青鹿毛)</span>
+                    </div>
+                    <h3 class="text-2xl font-extrabold mt-3" id="horseName">이퀴녹스 <span class="text-base text-slate-400 font-normal">(イクイノックス)</span></h3>
+                    <p class="text-xs text-slate-500 mt-1" id="horseBasic">2019년생 | 수말 (牡) | 기무라 데쓰야 마방</p>
+
+                    <hr class="my-4 border-slate-100 dark:border-slate-800">
+
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">각질 (주행 스타일)</span>
+                            <p class="font-bold text-blue-500 mt-0.5" id="horseStyle">선행 / 선입 (自在)</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">적성 거리</span>
+                            <p class="font-bold text-emerald-500 mt-0.5" id="horseDist">2,000m ~ 2,410m</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">통산 전적</span>
+                            <p class="font-bold mt-0.5" id="horseRecord">10전 8승 [8-2-0-0]</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">총 수득 상금</span>
+                            <p class="font-bold text-amber-500 mt-0.5" id="horseMoney">22억 1,544만 엔</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-sm">
+                        <p class="text-xs text-slate-400 mb-1">🧬 혈통 정보</p>
+                        <p id="horsePedigree">부: <strong>키타산 블랙</strong> × 모: <strong>샤토 블랑슈</strong> (모부: 킹 헤일로)</p>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-amber-500/5 border-l-4 border-amber-500 rounded-r-xl">
+                        <p class="text-xs font-bold text-amber-500 mb-1">📖 명승부 스토리</p>
+                        <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300" id="horseStory">
+                            2023년 두바이 시마 클래식에서 코스 레코드로 압승. 텐노상(가을)에서 1분 55초 2 세계 레코드를 수립하며 론진 세계 랭킹 1위로 은퇴했습니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 능력치 레이더 차트 & G1 승리 목록 -->
+                <div class="lg:col-span-5 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-400 mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-radar text-blue-500"></i> 6각 능력치 레이더 분석
+                        </h4>
+                        <div class="relative h-64">
+                            <canvas id="horseRadarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h4 class="font-bold text-xs text-slate-400 mb-2">🏆 주요 G1 우승 타이틀</h4>
+                        <div id="horseG1List" class="flex flex-wrap gap-1.5">
+                            <!-- JS로 삽입 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- [TAB 2] G1 레이스 일정 -->
+        <section id="tab2" class="tab-content hidden">
+            <div class="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span>🔥 JRA 연간 전체 G1 레이스 캘린더</span>
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">2월 페브러리S부터 12월 아리마 기념/호프풀S까지 24개 최고봉 레이스 총정리</p>
+                </div>
+                <div class="flex gap-2">
+                    <select id="raceSurfaceFilter" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium">
+                        <option value="all">전체 마장</option>
+                        <option value="turf">잔디 (Turf)</option>
+                        <option value="dirt">더트 (Dirt)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="g1RaceGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- JS로 동적 생성 -->
+            </div>
+        </section>
+
+        <!-- [TAB 3] 명마 & 기수 도감 -->
+        <section id="tab3" class="tab-content hidden">
+            <!-- 1:1 비교 섹션 -->
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm mb-8">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-blue-500"></i> 두 경주마 1:1 스펙 가상 대결 비교
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="text-xs text-slate-400 font-semibold mb-1 block">말 A (파랑)</label>
+                        <select id="compareA" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 font-medium text-sm">
+                            <!-- JS populate -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-semibold mb-1 block">말 B (빨강)</label>
+                        <select id="compareB" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 font-medium text-sm">
+                            <!-- JS populate -->
+                        </select>
+                    </div>
+                </div>
+                <div class="relative h-80">
+                    <canvas id="compareRadarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 기수 섹션 -->
+            <div class="mt-8">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-user-astronaut text-purple-500"></i> 일본 경마 레전드 & 톱 기수(Jockey) 열전
+                </h3>
+                <div id="jockeyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- JS populate -->
+                </div>
+            </div>
+        </section>
+
+        <!-- [TAB 4] 전국 10대 경마장 -->
+        <section id="tab4" class="tab-content hidden">
+            <div class="mb-6 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                <h2 class="text-xl font-bold">🏟️ JRA 전국 10대 중앙 경마장 가이드 & 인터랙티브 지도</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">경마장을 클릭하면 위치와 코스 고저차, 최종 직선 길이 및 공략법을 상세히 분석합니다.</p>
+                <div class="mt-4 flex flex-wrap gap-2" id="trackButtons">
+                    <!-- JS buttons -->
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- 지도 -->
+                <div class="lg:col-span-7 bg-white dark:bg-darkCard p-4 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <div id="map" class="w-full h-[450px] rounded-xl z-10"></div>
+                </div>
+                <!-- 경마장 정보 -->
+                <div class="lg:col-span-5 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm flex flex-col justify-between" id="trackDetailBox">
+                    <!-- JS populate -->
+                </div>
+            </div>
+        </section>
+
+        <!-- [TAB 5] 마권 종류 & 계산기 -->
+        <section id="tab5" class="tab-content hidden">
+            <!-- 배당금 계산기 카드 -->
+            <div class="bg-gradient-to-br from-blue-900/40 via-indigo-900/20 to-purple-900/40 border border-blue-500/30 p-6 rounded-2xl shadow-lg mb-8">
+                <h3 class="text-xl font-bold flex items-center gap-2 text-blue-400 mb-2">
+                    <i class="fa-solid fa-calculator"></i> 실시간 마권 환급금 & 수익률 계산기
+                </h3>
+                <p class="text-xs text-slate-400 mb-6">마권 종류와 베팅 금액, 배당률을 입력하면 당첨 시 예상 수령액과 순수익, 원화 환산액을 즉시 계산합니다.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="text-xs text-slate-400 font-medium mb-1 block">마권 종류</label>
+                        <select id="calcBetType" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm">
+                            <option>단승 (単勝)</option>
+                            <option>연승 / 복승식 (複勝)</option>
+                            <option>복연승 / 와이드 (ワイド)</option>
+                            <option>마번복승 / 우마렌 (馬連)</option>
+                            <option>마번쌍승 / 우마탄 (馬単)</option>
+                            <option>3연복 (3連複)</option>
+                            <option>3연단 (3連単)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-medium mb-1 block">베팅 금액 (엔, ¥)</label>
+                        <input type="number" id="calcAmount" value="1000" min="100" step="100" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-medium mb-1 block">확정 배당률 (배)</label>
+                        <input type="number" id="calcOdds" value="3.5" min="1.0" step="0.1" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400">총 베팅액</span>
+                        <p class="text-lg font-bold mt-1 text-slate-200" id="resCost">¥1,000</p>
+                    </div>
+                    <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400">예상 환급금 (엔)</span>
+                        <p class="text-xl font-extrabold mt-1 text-emerald-400" id="resPayout">¥3,500</p>
+                    </div>
+                    <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400">순수익 (엔)</span>
+                        <p class="text-xl font-extrabold mt-1 text-amber-400" id="resProfit">+¥2,500</p>
+                    </div>
+                    <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400">원화 예상액</span>
+                        <p class="text-lg font-bold mt-1 text-purple-400" id="resKrw">약 31,850원</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 마권 10가지 정리 -->
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-blue-500"></i> 일본 경마 10가지 마권 완전 정복
+            </h3>
+            <div id="betTypesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <!-- JS populate -->
+            </div>
+
+            <!-- 파독 및 마장 상태 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <h4 class="font-bold text-base mb-4 flex items-center gap-2 text-emerald-500">
+                        <i class="fa-solid fa-eye"></i> 실전 파독(Paddock) 관찰 5대 비법
+                    </h4>
+                    <div id="paddockList" class="space-y-3">
+                        <!-- JS populate -->
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <h4 class="font-bold text-base mb-4 flex items-center gap-2 text-amber-500">
+                        <i class="fa-solid fa-cloud-showers-heavy"></i> 마장 상태(바바) 4단계와 영향
+                    </h4>
+                    <div id="trackCondList" class="space-y-3">
+                        <!-- JS populate -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- [TAB 6] 명예의 전당 & 뉴스 -->
+        <section id="tab6" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- 상금 랭킹 -->
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-amber-500">
+                        <i class="fa-solid fa-sack-dollar"></i> 역대 수득 상금 랭킹 TOP 8
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                                <tr>
+                                    <th class="py-2">순위</th>
+                                    <th class="py-2">경주마</th>
+                                    <th class="py-2">총 상금</th>
+                                    <th class="py-2">주요 업적</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60" id="earningsTable">
+                                <!-- JS populate -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 무패 삼관마 계보 -->
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-purple-500">
+                        <i class="fa-solid fa-crown"></i> 역사상 단 8두! 클래식 삼관마 계보
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                                <tr>
+                                    <th class="py-2">연도</th>
+                                    <th class="py-2">경주마</th>
+                                    <th class="py-2">특이사항</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60" id="tripleCrownTable">
+                                <!-- JS populate -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 공식 링크 및 뉴스 -->
+            <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-globe text-blue-500"></i> 일본 경마 주요 공식 사이트 바로가기
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <a href="https://www.jra.go.jp/" target="_blank" class="p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-500/10 hover:border-blue-500/50 border border-slate-200 dark:border-slate-800 rounded-xl transition text-center group">
+                        <i class="fa-solid fa-building-columns text-2xl text-emerald-500 mb-2 group-hover:scale-110 transition"></i>
+                        <p class="font-bold text-sm">JRA 공식</p>
+                        <span class="text-xs text-slate-400">일본 중앙경마회</span>
+                    </a>
+                    <a href="https://www.netkeiba.com/" target="_blank" class="p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-500/10 hover:border-blue-500/50 border border-slate-200 dark:border-slate-800 rounded-xl transition text-center group">
+                        <i class="fa-solid fa-newspaper text-2xl text-blue-500 mb-2 group-hover:scale-110 transition"></i>
+                        <p class="font-bold text-sm">netkeiba</p>
+                        <span class="text-xs text-slate-400">일본 최대 포털</span>
+                    </a>
+                    <a href="https://www.jbis.or.jp/" target="_blank" class="p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-500/10 hover:border-blue-500/50 border border-slate-200 dark:border-slate-800 rounded-xl transition text-center group">
+                        <i class="fa-solid fa-dna text-2xl text-purple-500 mb-2 group-hover:scale-110 transition"></i>
+                        <p class="font-bold text-sm">JBIS Search</p>
+                        <span class="text-xs text-slate-400">경주마 혈통 DB</span>
+                    </a>
+                    <a href="https://jra-van.jp/" target="_blank" class="p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-500/10 hover:border-blue-500/50 border border-slate-200 dark:border-slate-800 rounded-xl transition text-center group">
+                        <i class="fa-solid fa-chart-line text-2xl text-amber-500 mb-2 group-hover:scale-110 transition"></i>
+                        <p class="font-bold text-sm">JRA-VAN</p>
+                        <span class="text-xs text-slate-400">공식 실시간 데이터</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="mt-12 py-8 border-t border-slate-200 dark:border-darkBorder text-center text-xs text-slate-500">
+        <p>🏇 일본 경마 올인원 대시보드 | Data provided by JRA, netkeiba & Historical Archives</p>
+        <p class="mt-1">본 사이트는 일본 경마에 대한 종합 정보 제공 및 교육용으로 제작되었습니다.</p>
+    </footer>
+
+    <!-- 자바스크립트 로직 -->
+    <script>
+        // 테마 토글
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // 탭 전환
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-slate-500', 'dark:text-slate-400');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-slate-500', 'dark:text-slate-400');
+
+            if (tabId === 'tab4' && map) {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
+
+        // ==========================
+        // 1. 경주마 데이터
+        // ==========================
+        const HORSES = {
+            "이퀴녹스": {
+                jp: "イクイノックス (Equinox)",
+                birth: 2019, sex: "수말 (牡)", coat: "청록모 (青鹿毛)",
+                trainer: "기무라 데쓰야 (미호)", jockey: "크리스토프 르메르",
+                record: "10전 8승 [8-2-0-0]", earnings: "22억 1,544만 엔",
+                style: "선행 / 선입 (自在)", dist: "2,000m ~ 2,410m",
+                sire: "키타산 블랙", dam: "샤토 블랑슈", damsire: "킹 헤일로",
+                title: "세계 레이팅 135의 경이적 괴물, 21세기 최강마",
+                story: "2023년 두바이 시마 클래식에서 코스 레코드 우승. 텐노상(가을)에서 1분 55초 2 세계 레코드를 수립하며 G1 6연승으로 세계 1위로 은퇴했습니다.",
+                g1: ["22 텐노상(가을)", "22 아리마 기념", "23 두바이 시마", "23 타카라즈카", "23 텐노상(가을) 세계레코드", "23 재팬 컵"],
+                stats: [99, 95, 98, 94, 96, 97]
+            },
+            "딥 임팩트": {
+                jp: "ディープインパクト (Deep Impact)",
+                birth: 2002, sex: "수말 (牡)", coat: "갈색 (鹿毛)",
+                trainer: "이케에 야스오 (릿토)", jockey: "타케 유타카",
+                record: "14전 12승 [12-1-0-1]", earnings: "14억 5,455만 엔",
+                style: "추입 (追込)", dist: "2,000m ~ 3,200m",
+                sire: "선데이 사일런스", dam: "윈드 인 허 헤어", damsire: "알자오",
+                title: "달리는 것이 아니라 날아오르는 말, 일본 경마의 신화",
+                story: "심볼리 루돌프 이후 21년 만의 무패 삼관마. 타케 유타카 기수는 '날고 있다'는 명언을 남겼으며, 종마로서도 일본 경마계를 완전히 지배했습니다.",
+                g1: ["05 사츠키상", "05 일본 더비", "05 킷카상 (무패삼관)", "06 텐노상(봄)", "06 타카라즈카", "06 재팬 컵", "06 아리마 기념"],
+                stats: [98, 97, 100, 96, 92, 95]
+            },
+            "아몬드 아이": {
+                jp: "アーモンドアイ (Almond Eye)",
+                birth: 2015, sex: "암말 (牝)", coat: "갈색 (鹿毛)",
+                trainer: "사카에 쿠니에다 (미호)", jockey: "크리스토프 르메르",
+                record: "15전 11승 [11-2-1-1]", earnings: "19억 1,526만 엔",
+                style: "선입 (差し)", dist: "1,600m ~ 2,400m",
+                sire: "로드 카날로아", dam: "후사이치 판도라", damsire: "선데이 사일런스",
+                title: "잔디 G1 9승의 금자탑, 역대 최강의 암말",
+                story: "암말 삼관 제패 후 2018 재팬 컵에서 2분 20초 6 세계 레코드를 작성. 2020년 은퇴전 재팬 컵에서 당대 삼관마들을 제압하며 잔디 G1 9승을 달성했습니다.",
+                g1: ["18 오카상", "18 오크스", "18 슈카상 (삼관)", "18 재팬 컵 레코드", "19 두바이 터프", "19 텐노상(가을)", "20 빅토리아M", "20 텐노상(가을)", "20 재팬 컵"],
+                stats: [99, 93, 99, 95, 94, 96]
+            },
+            "오르페브르": {
+                jp: "オルフェーヴル (Orfevre)",
+                birth: 2008, sex: "수말 (牡)", coat: "밤색 (栗毛)",
+                trainer: "이케에 야스토시 (릿토)", jockey: "이케조에 켄이치",
+                record: "21전 12승 [12-6-1-2]", earnings: "15억 7,621만 엔",
+                style: "선입 / 추입", dist: "2,000m ~ 3,000m",
+                sire: "스테이 골드", dam: "오리엔탈 아트", damsire: "메지로 맥퀸",
+                title: "금색의 폭군, 천재성과 광기를 겸비한 삼관마",
+                story: "한신대상전에서 외곽 펜스로 돌진 후 다시 전속력으로 달려 2착한 전설, 은퇴전 아리마 기념 8마신 차 대압승 등 수많은 전설을 낳았습니다.",
+                g1: ["11 사츠키상", "11 일본 더비", "11 킷카상 (삼관)", "11 아리마 기념", "12 타카라즈카", "13 아리마 기념 (8마신차)"],
+                stats: [96, 98, 97, 99, 95, 82]
+            },
+            "키타산 블랙": {
+                jp: "キタサンブラック (Kitasan Black)",
+                birth: 2012, sex: "수말 (牡)", coat: "갈색 (鹿毛)",
+                trainer: "시미즈 히사시 (릿토)", jockey: "타케 유타카",
+                record: "20전 12승 [12-2-4-2]", earnings: "18억 6,687만 엔",
+                style: "도주 / 선행", dist: "2,000m ~ 3,200m",
+                sire: "블랙 타이드", dam: "슈거 하트", damsire: "사쿠라 바쿠신 오",
+                title: "국민적 엔카 가수의 말, 불굴의 근성을 지닌 제왕",
+                story: "엔카 가수 키타지마 사부로의 소유마. 540kg 거구로 전방에서 끈질기게 버티며 G1 7승을 달성했고, 종마로서 이퀴녹스를 낳았습니다.",
+                g1: ["15 킷카상", "16 텐노상(봄)", "16 재팬 컵", "17 오사카배", "17 텐노상(봄)", "17 텐노상(가을)", "17 아리마 기념"],
+                stats: [93, 99, 90, 100, 98, 96]
+            },
+            "골드 쉽": {
+                jp: "ゴールドシップ (Gold Ship)",
+                birth: 2009, sex: "수말 (牡)", coat: "회모 (芦毛)",
+                trainer: "스가이 나오스케 (릿토)", jockey: "우치다 히로유키",
+                record: "28전 13승 [13-3-2-10]", earnings: "13억 9,776만 엔",
+                style: "추입 / 롱스퍼트 (워프)", dist: "2,200m ~ 3,200m",
+                sire: "스테이 골드", dam: "포인트 플래그", damsire: "메지로 맥퀸",
+                title: "경마계 최고의 개구쟁이, 규격 외의 워프 주법",
+                story: "사츠키상 진흙탕 인코스 워프 주법과 타카라즈카 2연패의 실력파이자, 120억 엔 마권 공중분해 기행의 주인공인 영원한 아이돌.",
+                g1: ["12 사츠키상", "12 킷카상", "12 아리마 기념", "13 타카라즈카", "14 타카라즈카", "15 텐노상(봄)"],
+                stats: [91, 100, 88, 98, 99, 75]
+            },
+            "사일런스 스즈카": {
+                jp: "サイレンススズカ (Silence Suzuka)",
+                birth: 1994, sex: "수말 (牡)", coat: "밤색 (栗毛)",
+                trainer: "하시다 미츠루 (릿토)", jockey: "타케 유타카",
+                record: "16전 9승 [9-1-0-6]", earnings: "3억 8,432만 엔",
+                style: "대도주 (大逃げ)", dist: "1,800m ~ 2,200m",
+                sire: "선데이 사일런스", dam: "와키아", damsire: "미스와키",
+                title: "이차원의 도망자, 영원히 멈추지 않는 꿈",
+                story: "초반부터 후속 마군을 10마신 이상 따돌리고 질주하는 경이적 스피드. 1998년 킨코상 대차 우승과 비운의 텐노상(가을)으로 전설이 되었습니다.",
+                g1: ["98 타카라즈카 기념"],
+                stats: [100, 89, 94, 95, 92, 93]
+            },
+            "토카이 테이오": {
+                jp: "トウカイテイオー (Tokai Teio)",
+                birth: 1988, sex: "수말 (牡)", coat: "갈색 (鹿毛)",
+                trainer: "마츠모토 쇼이치", jockey: "타케 유타카 / 안도 카츠미",
+                record: "12전 9승 [9-0-0-3]", earnings: "6억 2,139만 엔",
+                style: "선행 (先行)", dist: "2,000m ~ 2,500m",
+                sire: "심볼리 루돌프", dam: "토카이 내추럴", damsire: "나이스 댄서",
+                title: "제왕의 혈통, 세 번의 골절을 이겨낸 기적의 명마",
+                story: "황제 심볼리 루돌프의 아들로 무패 2관 달성. 세 번의 골절을 딛고 364일 만의 복귀전 1993 아리마 기념에서 감동의 역전 우승을 차지했습니다.",
+                g1: ["91 사츠키상", "91 일본 더비", "92 재팬 컵", "93 아리마 기념 (기적의 부활)"],
+                stats: [96, 92, 97, 100, 93, 95]
+            },
+            "소다시": {
+                jp: "ソダシ (Sodashi)",
+                birth: 2018, sex: "암말 (牝)", coat: "백모 (白毛)",
+                trainer: "스가이 나오스케", jockey: "요시다 하야토",
+                record: "16전 8승 [8-1-2-5]", earnings: "6억 2,943만 엔",
+                style: "선행 (先行)", dist: "1,600m ~ 2,000m",
+                sire: "쿠로후네", dam: "부치코", damsire: "킹 카메하메하",
+                title: "순백의 여왕, 세계 경마계를 매혹한 백마의 아이돌",
+                story: "돌연변이 백모마로서 세계 최초로 잔디 G1(한신JF)과 클래식(오카상)을 제패하여 폭발적인 대중적 인기를 얻었습니다.",
+                g1: ["20 한신 JF", "21 오카상", "22 빅토리아 마일"],
+                stats: [94, 88, 92, 97, 95, 94]
+            },
+            "도듀스": {
+                jp: "ドウデュース (Do Deuce)",
+                birth: 2019, sex: "수말 (牡)", coat: "갈색 (鹿毛)",
+                trainer: "토모미치 야스오", jockey: "타케 유타카",
+                record: "14전 6승 [6-1-1-6]", earnings: "12억 5,400만 엔",
+                style: "선입 / 추입", dist: "2,000m ~ 2,500m",
+                sire: "하츠 크라이", dam: "더스트 앤 다이아몬즈", damsire: "빈디케이션",
+                title: "이퀴녹스를 꺾었던 유일한 일본 더비마, 극강의 스퍼트",
+                story: "2022 더비에서 레코드로 우승. 타케 유타카 기수와 함께 2023 아리마 기념, 2024 텐노상(가을)에서 막판 32.5초 초광속 스퍼트로 대역전극을 썼습니다.",
+                g1: ["21 아사히배 FS", "22 일본 더비", "23 아리마 기념", "24 텐노상(가을)"],
+                stats: [97, 94, 99, 96, 96, 95]
+            }
+        };
+
+        let radarChart = null;
+        const labels = ['스피드', '스태미너', '순발력', '근성', '파워', '지능'];
+
+        function updateHorseProfile(name) {
+            const h = HORSES[name];
+            document.getElementById('horseName').innerHTML = `${name} <span class="text-base text-slate-400 font-normal">(${h.jp})</span>`;
+            document.getElementById('horseBadge').innerText = h.title;
+            document.getElementById('horseCoat').innerText = h.coat;
+            document.getElementById('horseBasic').innerText = `${h.birth}년생 | ${h.sex} | ${h.trainer}`;
+            document.getElementById('horseStyle').innerText = h.style;
+            document.getElementById('horseDist').innerText = h.dist;
+            document.getElementById('horseRecord').innerText = h.record;
+            document.getElementById('horseMoney').innerText = h.earnings;
+            document.getElementById('horsePedigree').innerHTML = `부: <strong>${h.sire}</strong> × 모: <strong>${h.dam}</strong> (모부: ${h.damsire})`;
+            document.getElementById('horseStory').innerText = h.story;
+
+            const g1Container = document.getElementById('horseG1List');
+            g1Container.innerHTML = h.g1.map(g => `<span class="px-2.5 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-lg text-xs font-semibold">🏆 ${g}</span>`).join('');
+
+            // 차트 업데이트
+            if (radarChart) {
+                radarChart.data.datasets[0].label = name;
+                radarChart.data.datasets[0].data = h.stats;
+                radarChart.update();
+            } else {
+                const ctx = document.getElementById('horseRadarChart').getContext('2d');
+                radarChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: name,
+                            data: h.stats,
+                            backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                            borderColor: '#3b82f6',
+                            pointBackgroundColor: '#3b82f6',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                min: 70, max: 100,
+                                ticks: { stepSize: 10, display: false },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                pointLabels: { font: { size: 11 }, color: '#94a3b8' }
+                            }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        document.getElementById('horseSelect').addEventListener('change', (e) => {
+            updateHorseProfile(e.target.value);
+        });
+
+        // ==========================
+        // 2. G1 레이스 일정
+        // ==========================
+        const G1_RACES = [
+            { name: "페브러리 S", jp: "フェブラリーS", month: "2월 중순", track: "도쿄 경마장", surf: "더트 1,600m", prize: "1억 2,000만 엔", desc: "한 해 첫 G1, 더트 마일 챔피언 결정전." },
+            { name: "타카마츠노미야 기념", jp: "高松宮記念", month: "3월 하순", track: "주쿄 경마장", surf: "잔디 1,200m", prize: "1억 7,000만 엔", desc: "봄철 단거리 최강자를 가리는 스프린트 G1." },
+            { name: "오사카배", jp: "大阪杯", month: "4월 초순", track: "한신 경마장", surf: "잔디 2,000m", prize: "2억 엔", desc: "봄철 고마 중거리 왕도 제1탄." },
+            { name: "오카상", jp: "桜花賞", month: "4월 초순", track: "한신 경마장", surf: "잔디 1,600m", prize: "1억 4,000만 엔", desc: "암말 삼관 제1탄. 가장 빠른 암말이 이긴다." },
+            { name: "사츠키상", jp: "皐月賞", month: "4월 중순", track: "나카야마 경마장", surf: "잔디 2,000m", prize: "2억 엔", desc: "클래식 삼관 제1탄. 가장 빠른 말이 이긴다." },
+            { name: "텐노상 (봄)", jp: "天皇賞（春）", month: "5월 초순", track: "교토 경마장", surf: "잔디 3,200m", prize: "2억 2,000만 엔", desc: "전통과 권위의 평지 최장거리 스태미너 극한전." },
+            { name: "NHK 마일 컵", jp: "NHKマイルC", month: "5월 초순", track: "도쿄 경마장", surf: "잔디 1,600m", prize: "1억 3,000만 엔", desc: "3세 최강 마일러 결정전." },
+            { name: "빅토리아 마일", jp: "ヴィクトリアM", month: "5월 중순", track: "도쿄 경마장", surf: "잔디 1,600m", prize: "1억 3,000만 엔", desc: "고마 암말들의 봄철 정점 대결." },
+            { name: "우준 빈마 (오크스)", jp: "優駿牝馬 (オークス)", month: "5월 하순", track: "도쿄 경마장", surf: "잔디 2,400m", prize: "1억 5,000만 엔", desc: "암말 클래식 2탄. 2400m 거리 극복의 여왕전." },
+            { name: "일본 더비 (도쿄 유슌)", jp: "東京優駿 (日本ダービー)", month: "5월 말", track: "도쿄 경마장", surf: "잔디 2,400m", prize: "3억 엔", desc: "모든 경마인의 꿈. 가장 운이 좋은 말이 이긴다." },
+            { name: "야스다 기념", jp: "安田記念", month: "6월 초순", track: "도쿄 경마장", surf: "잔디 1,600m", prize: "1억 8,000만 엔", desc: "봄철 마일 총결산, 아시아 최고 수준의 마일 레이스." },
+            { name: "타카라즈카 기념", jp: "宝塚記念", month: "6월 하순", track: "한신 경마장", surf: "잔디 2,200m", prize: "2억 2,000만 엔", desc: "상반기 그랑프리. 팬 투표로 출전마 선발." },
+            { name: "스프린터즈 S", jp: "スプリンターズS", month: "10월 초순", track: "나카야마 경마장", surf: "잔디 1,200m", prize: "1억 7,000만 엔", desc: "가을 단거리 제왕전, 초광속 직선 승부." },
+            { name: "슈카상", jp: "秋華賞", month: "10월 중순", track: "교토 경마장", surf: "잔디 2,000m", prize: "1억 1,000만 엔", desc: "암말 삼관의 마지막 관문." },
+            { name: "킷카상", jp: "菊花賞", month: "10월 하순", track: "교토 경마장", surf: "잔디 3,000m", prize: "2억 엔", desc: "클래식 삼관 최종전. 가장 강한 말이 이긴다." },
+            { name: "텐노상 (가을)", jp: "天皇賞（秋）", month: "10월 말", track: "도쿄 경마장", surf: "잔디 2,000m", prize: "2억 2,000만 엔", desc: "가을 중거리 최강 결정전. 이퀴녹스 1:55.2 신화." },
+            { name: "엘리자베스 여왕배", jp: "エリザベス女王杯", month: "11월 중순", track: "교토 경마장", surf: "잔디 2,200m", prize: "1억 3,000만 엔", desc: "암말 세대를 아우르는 중장거리 최강 여왕전." },
+            { name: "마일 CS", jp: "マイルCS", month: "11월 하순", track: "교토 경마장", surf: "잔디 1,600m", prize: "1억 8,000만 엔", desc: "가을 마일의 최고봉." },
+            { name: "재팬 컵", jp: "ジャパンカップ", month: "11월 말", track: "도쿄 경마장", surf: "잔디 2,400m", prize: "5억 엔", desc: "세계 명마들이 도쿄에서 격돌하는 최고 권위 국제전." },
+            { name: "챔피언스 컵", jp: "チャンピオンズC", month: "12월 초순", track: "주쿄 경마장", surf: "더트 1,800m", prize: "1억 2,000만 엔", desc: "하반기 더트 챔피언 결정전." },
+            { name: "한신 JF", jp: "阪神JF", month: "12월 중순", track: "한신 경마장", surf: "잔디 1,600m", prize: "6,500만 엔", desc: "2세 여왕 결정전, 클래식 유력 후보 바로미터." },
+            { name: "아사히배 FS", jp: "朝日杯FS", month: "12월 중순", track: "한신 경마장", surf: "잔디 1,600m", prize: "7,000만 엔", desc: "2세 마일 챔피언 결정전." },
+            { name: "아리마 기념", jp: "有馬記念", month: "12월 말", track: "나카야마 경마장", surf: "잔디 2,500m", prize: "5억 엔", desc: "일본 한 해를 마무리하는 최대 국민적 그랑프리." },
+            { name: "호프풀 S", jp: "ホープフルS", month: "12월 28일", track: "나카야마 경마장", surf: "잔디 2,000m", prize: "7,000만 엔", desc: "2세 중거리 챔피언 결정전, 한 해의 마지막 G1." }
+        ];
+
+        function renderRaces(filter = 'all') {
+            const grid = document.getElementById('g1RaceGrid');
+            const filtered = G1_RACES.filter(r => {
+                if (filter === 'turf') return r.surf.includes('잔디');
+                if (filter === 'dirt') return r.surf.includes('더트');
+                return true;
+            });
+
+            grid.innerHTML = filtered.map(r => `
+                <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm hover:border-blue-500 transition">
+                    <div class="flex justify-between items-center">
+                        <span class="px-2.5 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-full text-xs font-semibold">${r.month}</span>
+                        <span class="text-xs text-slate-400">${r.track}</span>
+                    </div>
+                    <h4 class="text-lg font-bold mt-2">${r.name}</h4>
+                    <p class="text-xs text-slate-400">${r.jp}</p>
+                    <div class="flex gap-2 my-3">
+                        <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-medium text-blue-500">📍 ${r.surf}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${r.desc}</p>
+                    <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">1착 상금</span>
+                        <span class="font-bold text-amber-500">${r.prize}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('raceSurfaceFilter').addEventListener('change', (e) => {
+            renderRaces(e.target.value);
+        });
+
+        // ==========================
+        // 3. 기수 도감 & 1:1 비교
+        // ==========================
+        const JOCKEYS = [
+            { name: "타케 유타카", jp: "武 豊", badge: "살아있는 전설", wins: "4,500승+", g1: "80승+", derby: "더비 6승", partner: "딥 임팩트, 키타산 블랙, 도듀스", quote: "말은 달리고 싶어 하는 동물입니다. 기수는 그 마음을 방해하지 않는 것이 가장 중요합니다." },
+            { name: "크리스토프 르메르", jp: "C. ルメール", badge: "리딩 자키 1위", wins: "1,900승+", g1: "50승+", derby: "더비 1승", partner: "이퀴녹스, 아몬드 아이", quote: "경마는 체스이자 리듬입니다. 침착함을 잃지 않는 순간 길이 열립니다." },
+            { name: "카와다 유가", jp: "川田 将雅", badge: "일본 최고 승률", wins: "2,000승+", g1: "25승+", derby: "더비 1승", partner: "리버티 아일랜드, 우슈바 테소로", quote: "한 번의 승차에 모든 책임과 긍지를 담아 탑니다." },
+            { name: "미르코 데무로", jp: "M. デムーロ", badge: "G1 빅게임 해결사", wins: "1,300승+", g1: "34승+", derby: "더비 2승", partner: "듀라멘테, 네오 유니버스", quote: "천황 폐하께 바친 무릎 꿇은 경례는 제 인생 가장 영광스러운 순간이었습니다." },
+            { name: "사카이 류세이", jp: "坂井 瑠星", badge: "차세대 에이스", wins: "500승+", g1: "다수", derby: "해외 원정", partner: "포에버 영, 레몬 팝", quote: "세계 최고 무대에서 일본 말과 함께 가장 먼저 결승선을 넘겠습니다." }
+        ];
+
+        function renderJockeys() {
+            const grid = document.getElementById('jockeyGrid');
+            grid.innerHTML = JOCKEYS.map(j => `
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-lg font-bold">${j.name} <span class="text-xs text-slate-400 font-normal">(${j.jp})</span></h4>
+                        <span class="px-2 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-full text-xs font-semibold">${j.badge}</span>
+                    </div>
+                    <div class="flex gap-2 my-3 text-xs">
+                        <span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded font-semibold text-blue-500">🏆 ${j.wins}</span>
+                        <span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded font-semibold text-amber-500">🥇 G1 ${j.g1}</span>
+                        <span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded font-semibold text-purple-500">👑 ${j.derby}</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2"><strong>대표마:</strong> ${j.partner}</p>
+                    <div class="mt-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs italic text-slate-600 dark:text-slate-300 border-l-2 border-blue-500">
+                        "${j.quote}"
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let compareChart = null;
+        function initComparison() {
+            const selA = document.getElementById('compareA');
+            const selB = document.getElementById('compareB');
+            const names = Object.keys(HORSES);
+
+            selA.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+            selB.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+            selA.value = "이퀴녹스";
+            selB.value = "딥 임팩트";
+
+            function updateCompare() {
+                const a = HORSES[selA.value];
+                const b = HORSES[selB.value];
+
+                if (compareChart) {
+                    compareChart.data.datasets[0].label = selA.value;
+                    compareChart.data.datasets[0].data = a.stats;
+                    compareChart.data.datasets[1].label = selB.value;
+                    compareChart.data.datasets[1].data = b.stats;
+                    compareChart.update();
+                } else {
+                    const ctx = document.getElementById('compareRadarChart').getContext('2d');
+                    compareChart = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: selA.value,
+                                    data: a.stats,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                                    borderColor: '#3b82f6',
+                                    pointBackgroundColor: '#3b82f6'
+                                },
+                                {
+                                    label: selB.value,
+                                    data: b.stats,
+                                    backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                                    borderColor: '#ef4444',
+                                    pointBackgroundColor: '#ef4444'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                r: {
+                                    min: 70, max: 100,
+                                    ticks: { display: false },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                    pointLabels: { font: { size: 12 }, color: '#94a3b8' }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            selA.addEventListener('change', updateCompare);
+            selB.addEventListener('change', updateCompare);
+            updateCompare();
+        }
+
+        // ==========================
+        // 4. 전국 10대 경마장 & Leaflet Map
+        // ==========================
+        const TRACKS = {
+            "도쿄 경마장": { jp: "東京競馬場 (府中)", loc: "도쿄도 후추시", lat: 35.6628, lng: 139.4851, turf: "525.9m (좌회전 최장)", dirt: "501.6m", diff: "고저차 2.7m (심장파열 언덕)", style: "선입, 추입", feat: "일본 더비, 재팬컵 개최. 광활한 직선에서 폭발적 순발력이 승패 결정." },
+            "나카야마 경마장": { jp: "中山競馬場 (船橋)", loc: "지바현 후나바시시", lat: 35.7250, lng: 139.9610, turf: "310.0m (짧음)", dirt: "308.0m", diff: "고저차 5.3m (골 앞 2.2m 급경사)", style: "도주, 선행", feat: "아리마 기념, 사츠키상 무대. 직선이 짧고 급경사가 있어 롱스퍼트 필요." },
+            "교토 경마장": { jp: "京都競馬場 (淀)", loc: "교토부 교토시", lat: 34.9077, lng: 135.7247, turf: "외선 404m / 내선 328m", dirt: "329.0m", diff: "고저차 4.3m (요도의 언덕)", style: "선행, 선입", feat: "킷카상, 텐노상 봄. 3코너 오르막 후 완만한 내리막 활용이 승부처." },
+            "한신 경마장": { jp: "阪神競馬場 (仁川)", loc: "효고현 다카라즈카시", lat: 34.7801, lng: 135.3619, turf: "외선 473.6m", dirt: "352.7m", diff: "고저차 1.8m (골 직전 언덕)", style: "선입, 선행", feat: "타카라즈카 기념, 오카상 개최. 외선 코스는 웅장하여 실력마에게 유리." },
+            "주쿄 경마장": { jp: "中京競馬場", loc: "아이치현 도요아케시", lat: 35.0664, lng: 136.9890, turf: "412.5m (좌회전)", dirt: "410.7m", diff: "고저차 3.5m (경사도 2.0%)", style: "선입, 선행", feat: "챔피언스컵, 타카마츠노미야기념. 도쿄와 함께 둘뿐인 좌회전 코스." },
+            "삿포로 경마장": { jp: "札幌競馬場", loc: "홋카이도 삿포로시", lat: 43.0722, lng: 141.3256, turf: "266.1m (평탄)", dirt: "264.3m", diff: "고저차 0.7m (평탄)", style: "도주, 선행", feat: "전면 북해도 양잔디(洋芝), 삿포로 기념 개최. 파워형 선행마 유리." },
+            "하코다테 경마장": { jp: "函館競馬場", loc: "홋카이도 하코다테시", lat: 41.7820, lng: 140.7766, turf: "262.1m (JRA 최단)", dirt: "260.3m", diff: "고저차 3.5m", style: "도주, 선행", feat: "일본 최고(最古) 역사, 바다가 보이는 경마장. 짧은 직선으로 선두권 필수." },
+            "니가타 경마장": { jp: "新潟競馬場", loc: "니가타현 니가타시", lat: 37.9515, lng: 139.1764, turf: "외선 658.7m (일본 1위)", dirt: "353.9m", diff: "고저차 2.2m", style: "선입, 추입", feat: "일본 최장 659m 직선과 유일한 직선 1000m 전용 코스 보유." },
+            "후쿠시마 경마장": { jp: "福島競馬場", loc: "후쿠시마현 후쿠시마시", lat: 37.7656, lng: 140.4852, turf: "292.0m", dirt: "295.7m", diff: "고저차 1.9m", style: "도주, 선행", feat: "스파이럴 커브의 콤팩트한 코스, 만마권이 자주 쏟아지는 난타전 코스." },
+            "고쿠라 경마장": { jp: "小倉競馬場", loc: "후쿠오카현 기타큐슈시", lat: 33.8427, lng: 130.8770, turf: "293.0m", dirt: "291.3m", diff: "고저차 3.0m", style: "도주, 선행", feat: "규슈 유일의 중앙 경마장. 완만한 내리막으로 초고속 하이페이스 전개." }
+        };
+
+        let map = null;
+        let currentMarker = null;
+
+        function initMap() {
+            map = L.map('map').setView([35.6628, 139.4851], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            currentMarker = L.marker([35.6628, 139.4851]).addTo(map).bindPopup("<b>도쿄 경마장</b><br>東京競馬場").openPopup();
+        }
+
+        function selectTrack(name) {
+            const t = TRACKS[name];
+            map.setView([t.lat, t.lng], 14);
+            currentMarker.setLatLng([t.lat, t.lng]).setPopupContent(`<b>${name}</b><br>${t.jp}`).openPopup();
+
+            document.getElementById('trackDetailBox').innerHTML = `
+                <div>
+                    <h3 class="text-2xl font-extrabold">${name}</h3>
+                    <p class="text-sm text-slate-400 mt-0.5">${t.jp} | 📍 ${t.loc}</p>
+                    <div class="grid grid-cols-2 gap-3 my-4">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">잔디 직선 거리</span>
+                            <p class="font-bold text-blue-500 mt-0.5">${t.turf}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">코스 고저차</span>
+                            <p class="font-bold text-amber-500 mt-0.5">${t.diff}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">더트 직선</span>
+                            <p class="font-bold mt-0.5">${t.dirt}</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                            <span class="text-xs text-slate-400">유리한 각질</span>
+                            <p class="font-bold text-emerald-500 mt-0.5">${t.style}</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-sm leading-relaxed">
+                        <p class="text-xs font-semibold text-slate-400 mb-1">🏟️ 코스 공략 팁</p>
+                        ${t.feat}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTrackButtons() {
+            const container = document.getElementById('trackButtons');
+            container.innerHTML = Object.keys(TRACKS).map(name => `
+                <button onclick="selectTrack('${name}')" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-blue-500 hover:text-white rounded-xl text-xs font-semibold transition">
+                    ${name}
+                </button>
+            `).join('');
+            selectTrack("도쿄 경마장");
+        }
+
+        // ==========================
+        // 5. 마권 종류 & 계산기
+        // ==========================
+        const BET_TYPES = [
+            { name: "단승 (単勝)", jp: "単勝", desc: "1착마 1두 적중", rate: "80%", diff: "★☆☆☆☆", tip: "초보자 필수 마권" },
+            { name: "연승 / 복승식 (複勝)", jp: "複勝", desc: "3착 이내 들어올 1두 적중", rate: "80%", diff: "★☆☆☆☆", tip: "적중 확률 최고, 복병마 노림수" },
+            { name: "복연승 / 와이드 (ワイド)", jp: "ワイド", desc: "3착 내 들어올 2두 적중 (순서 무관)", rate: "77.5%", diff: "★★☆☆☆", tip: "중급자들의 최고 애용 마권" },
+            { name: "마번복승 / 우마렌 (馬連)", jp: "馬連", desc: "1, 2착마 2두 적중 (순서 무관)", rate: "77.5%", diff: "★★★☆☆", tip: "가장 대중적인 전통 마권" },
+            { name: "마번쌍승 / 우마탄 (馬単)", jp: "馬単", desc: "1착과 2착마를 순서대로 적중", rate: "75%", diff: "★★★★☆", tip: "우마렌의 2~4배 고배당" },
+            { name: "3연복 (3連複)", jp: "3連複", desc: "1, 2, 3착마 3두 적중 (순서 무관)", rate: "75%", diff: "★★★★☆", tip: "만마권 단골 코스" },
+            { name: "3연단 (3連単)", jp: "3連単", desc: "1, 2, 3착마를 착순까지 정확히 적중", rate: "72.5%", diff: "★★★★★", tip: "인생 역전 로또급 최고 난도" },
+            { name: "WIN5", jp: "WIN5", desc: "일요일 5개 메인 레이스 1착마 연속 적중", rate: "70%", diff: "★★★★★★", tip: "최고 6억 엔 한도의 드림 마권" }
+        ];
+
+        function renderBetTypes() {
+            document.getElementById('betTypesGrid').innerHTML = BET_TYPES.map(b => `
+                <div class="bg-white dark:bg-darkCard p-4 rounded-xl border border-slate-200 dark:border-darkBorder shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-sm">${b.name} <span class="text-xs text-slate-400 font-normal">(${b.jp})</span></h4>
+                        <span class="text-xs text-amber-500 font-semibold">${b.diff}</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">${b.desc}</p>
+                    <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                        <span class="text-slate-400">환급률: ${b.rate}</span>
+                        <span class="text-blue-500 font-medium">💡 ${b.tip}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // 파독
+            const paddocks = [
+                { pt: "1. 걸음걸이 (보법)", gd: "보폭이 넓고 활기차게 뒷다리가 앞다리 자리를 밟고 감", bd: "고개가 들리고 종종걸음처럼 뻣뻣함" },
+                { pt: "2. 털의 윤기 (모색)", gd: "햇빛에 반짝이고 동전 모양 얼룩(제니가타) 비침", bd: "털이 푸석하고 윤기 없이 바랜 느낌" },
+                { pt: "3. 땀 흘림 (발한)", gd: "목/사타구니에 얇게 촉촉이 맺힘", bd: "하얀 거품이 엉겨붙어 뚝뚝 떨어짐" },
+                { pt: "4. 기백과 집중력", gd: "귀를 쫑긋거리며 침착하게 정면 응시", bd: "흰자위를 보이며 거품 물고 요동침" }
+            ];
+            document.getElementById('paddockList').innerHTML = paddocks.map(p => `
+                <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs">
+                    <p class="font-bold mb-1">${p.pt}</p>
+                    <p class="text-emerald-500">🟢 좋음: ${p.gd}</p>
+                    <p class="text-red-400 mt-0.5">🔴 나쁨: ${p.bd}</p>
+                </div>
+            `).join('');
+
+            // 바바 상태
+            const tracks = [
+                { cd: "양호 (良)", desc: "마른 최적 상태. 잔디는 선행/선입 유리." },
+                { cd: "다습 (稍重)", desc: "약간 촉촉함. 파워형 말들이 두각." },
+                { cd: "포화 (重)", desc: "진흙탕. 잔디는 체력 소모 극심, 더트는 모래가 굳어 초고속 마장 변모!" },
+                { cd: "불량 (不良)", desc: "수중전. 앞선 말이 진흙을 튀겨 도주마 극도로 유리." }
+            ];
+            document.getElementById('trackCondList').innerHTML = tracks.map(t => `
+                <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs">
+                    <p class="font-bold text-amber-500 mb-0.5">${t.cd}</p>
+                    <p class="text-slate-400">${t.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        // 계산기 이벤트
+        function calcOdds() {
+            const amount = parseFloat(document.getElementById('calcAmount').value) || 0;
+            const odds = parseFloat(document.getElementById('calcOdds').value) || 1.0;
+
+            const payout = Math.floor(amount * odds);
+            const profit = payout - amount;
+            const krw = Math.floor(payout * 9.1);
+
+            document.getElementById('resCost').innerText = `¥${amount.toLocaleString()}`;
+            document.getElementById('resPayout').innerText = `¥${payout.toLocaleString()}`;
+            document.getElementById('resProfit').innerText = `${profit >= 0 ? '+' : ''}¥${profit.toLocaleString()}`;
+            document.getElementById('resKrw').innerText = `약 ${krw.toLocaleString()}원`;
+        }
+
+        document.getElementById('calcAmount').addEventListener('input', calcOdds);
+        document.getElementById('calcOdds').addEventListener('input', calcOdds);
+
+        // ==========================
+        // 6. 명예의 전당 & 랭킹
+        // ==========================
+        function renderHallOfFame() {
+            const earnings = [
+                { rank: "1위", name: "이퀴녹스", money: "22억 1,544만 엔", note: "세계 랭킹 1위" },
+                { rank: "2위", name: "우슈바 테소로", money: "22억 1,000만 엔", note: "두바이 월드컵 우승" },
+                { rank: "3위", name: "아몬드 아이", money: "19억 1,526만 엔", note: "잔디 G1 9승" },
+                { rank: "4위", name: "키타산 블랙", money: "18억 6,687만 엔", note: "G1 7승 & 명종마" },
+                { rank: "5위", name: "티엠 오페라 오", money: "18억 3,518만 엔", note: "세기말 패왕 8연승" },
+                { rank: "6위", name: "오르페브르", money: "15억 7,621만 엔", note: "삼관마 & 폭군" },
+                { rank: "7위", name: "젠틸돈나", money: "15억 6,700만 엔", note: "암말 삼관 & 재팬컵" },
+                { rank: "8위", name: "딥 임팩트", money: "14억 5,455만 엔", note: "무패 삼관 & 전설" }
+            ];
+            document.getElementById('earningsTable').innerHTML = earnings.map(e => `
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <td class="py-2.5 font-bold ${e.rank.includes('1') ? 'text-amber-500' : ''}">${e.rank}</td>
+                    <td class="py-2.5 font-semibold">${e.name}</td>
+                    <td class="py-2.5 text-amber-500 font-bold">${e.money}</td>
+                    <td class="py-2.5 text-slate-400 text-xs">${e.note}</td>
+                </tr>
+            `).join('');
+
+            const triple = [
+                { year: 1941, name: "세인트 라이트", note: "초대 삼관마" },
+                { year: 1964, name: "신잔 (神賛)", note: "오관마의 시조" },
+                { year: 1983, name: "미스터 CB", note: "후방 추입의 미학" },
+                { year: 1984, name: "심볼리 루돌프", note: "최초의 무패 삼관(황제)" },
+                { year: 1994, name: "나리타 브라이언", note: "괴물, 압도적 차이" },
+                { year: 2005, name: "딥 임팩트", note: "21세기 무패 삼관" },
+                { year: 2011, name: "오르페브르", note: "금색의 폭군" },
+                { year: 2020, name: "콘트레일", note: "부자(父子) 무패 삼관" }
+            ];
+            document.getElementById('tripleCrownTable').innerHTML = triple.map(t => `
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <td class="py-2.5 text-slate-400">${t.year}</td>
+                    <td class="py-2.5 font-semibold">${t.name}</td>
+                    <td class="py-2.5 text-xs text-blue-400">${t.note}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 초기화 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            updateHorseProfile("이퀴녹스");
+            renderRaces();
+            renderJockeys();
+            initComparison();
+            initMap();
+            renderTrackButtons();
+            renderBetTypes();
+            calcOdds();
+            renderHallOfFame();
+        });
+    </script>
+</body>
+</html>
+
